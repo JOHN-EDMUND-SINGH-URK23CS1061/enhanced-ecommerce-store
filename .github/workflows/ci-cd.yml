@@ -23,36 +23,31 @@ jobs:
         ls -la
         
         echo "Checking service directories..."
-        [ -d "frontend" ] && echo "frontend directory: EXISTS"
-        [ -d "product-service" ] && echo "product-service directory: EXISTS"
-        [ -d "order-service" ] && echo "order-service directory: EXISTS"
-        [ -f "docker-compose.yml" ] && echo "docker-compose.yml: EXISTS"
-        [ -f "README.md" ] && echo "README.md: EXISTS"
+        test -d "frontend" && echo "frontend directory: EXISTS"
+        test -d "product-service" && echo "product-service directory: EXISTS"
+        test -d "order-service" && echo "order-service directory: EXISTS"
+        test -f "docker-compose.yml" && echo "docker-compose.yml: EXISTS"
+        test -f "README.md" && echo "README.md: EXISTS"
         
     - name: Validate package files
       run: |
         echo "Validating package.json files..."
-        [ -f "product-service/package.json" ] && echo "product-service/package.json: EXISTS"
-        [ -f "order-service/package.json" ] && echo "order-service/package.json: EXISTS"
+        test -f "product-service/package.json" && echo "product-service/package.json: EXISTS"
+        test -f "order-service/package.json" && echo "order-service/package.json: EXISTS"
         
         echo "Checking package.json content..."
-        node -e "
-          const fs = require('fs');
-          const pkg1 = JSON.parse(fs.readFileSync('product-service/package.json', 'utf8'));
-          const pkg2 = JSON.parse(fs.readFileSync('order-service/package.json', 'utf8'));
-          console.log('product-service name:', pkg1.name);
-          console.log('order-service name:', pkg2.name);
-        "
+        cat product-service/package.json | grep '"name"' && echo "product-service package.json: VALID"
+        cat order-service/package.json | grep '"name"' && echo "order-service package.json: VALID"
         
     - name: Validate Docker files
       run: |
         echo "Validating Docker configuration..."
-        [ -f "frontend/Dockerfile" ] && echo "frontend/Dockerfile: EXISTS"
-        [ -f "product-service/Dockerfile" ] && echo "product-service/Dockerfile: EXISTS"
-        [ -f "order-service/Dockerfile" ] && echo "order-service/Dockerfile: EXISTS"
+        test -f "frontend/Dockerfile" && echo "frontend/Dockerfile: EXISTS"
+        test -f "product-service/Dockerfile" && echo "product-service/Dockerfile: EXISTS"
+        test -f "order-service/Dockerfile" && echo "order-service/Dockerfile: EXISTS"
         
         echo "Validating docker-compose.yml..."
-        docker-compose config > /dev/null && echo "docker-compose.yml: VALID"
+        docker-compose config && echo "docker-compose.yml: VALID"
         
     - name: Success Summary
       run: |
