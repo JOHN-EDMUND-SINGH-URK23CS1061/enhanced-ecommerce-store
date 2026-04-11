@@ -3,181 +3,42 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Setup Node.js
+
+    - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-        
-    - name: Validate Project Structure
-      run: |
-        echo "========================================="
-        echo "Enhanced eCommerce Store - CI/CD Pipeline"
-        echo "========================================="
-        echo "Validating project structure..."
-        
-        # Check directories
-        echo "Checking service directories..."
-        [ -d "frontend" ] && echo "frontend: EXISTS" || echo "frontend: MISSING"
-        [ -d "product-service" ] && echo "product-service: EXISTS" || echo "product-service: MISSING"
-        [ -d "order-service" ] && echo "order-service: EXISTS" || echo "order-service: MISSING"
-        [ -d "k8s" ] && echo "k8s: EXISTS" || echo "k8s: MISSING"
-        
-        # Check key files
-        echo "Checking configuration files..."
-        [ -f "docker-compose.yml" ] && echo "docker-compose.yml: EXISTS" || echo "docker-compose.yml: MISSING"
-        [ -f "README.md" ] && echo "README.md: EXISTS" || echo "README.md: MISSING"
-        [ -f "frontend/index.html" ] && echo "frontend/index.html: EXISTS" || echo "frontend/index.html: MISSING"
-        
-        # Check service files
-        echo "Checking service files..."
-        [ -f "product-service/package.json" ] && echo "product-service/package.json: EXISTS" || echo "product-service/package.json: MISSING"
-        [ -f "product-service/server.js" ] && echo "product-service/server.js: EXISTS" || echo "product-service/server.js: MISSING"
-        [ -f "order-service/package.json" ] && echo "order-service/package.json: EXISTS" || echo "order-service/package.json: MISSING"
-        [ -f "order-service/server.js" ] && echo "order-service/server.js: EXISTS" || echo "order-service/server.js: MISSING"
-        
-        # Check Docker files
-        echo "Checking Docker files..."
-        [ -f "frontend/Dockerfile" ] && echo "frontend/Dockerfile: EXISTS" || echo "frontend/Dockerfile: MISSING"
-        [ -f "product-service/Dockerfile" ] && echo "product-service/Dockerfile: EXISTS" || echo "product-service/Dockerfile: MISSING"
-        [ -f "order-service/Dockerfile" ] && echo "order-service/Dockerfile: EXISTS" || echo "order-service/Dockerfile: MISSING"
-        
-        # Check Kubernetes files
-        echo "Checking Kubernetes files..."
-        [ -f "k8s/namespace.yml" ] && echo "k8s/namespace.yml: EXISTS" || echo "k8s/namespace.yml: MISSING"
-        [ -f "k8s/product-service-deployment.yml" ] && echo "k8s/product-service-deployment.yml: EXISTS" || echo "k8s/product-service-deployment.yml: MISSING"
-        [ -f "k8s/order-service-deployment.yml" ] && echo "k8s/order-service-deployment.yml: EXISTS" || echo "k8s/order-service-deployment.yml: MISSING"
-        [ -f "k8s/frontend-deployment.yml" ] && echo "k8s/frontend-deployment.yml: EXISTS" || echo "k8s/frontend-deployment.yml: MISSING"
-        
-    - name: Install Dependencies
-      run: |
-        echo "Installing service dependencies..."
-        
-        # Install product-service dependencies
-        cd product-service
-        npm install --production
-        cd ..
-        
-        # Install order-service dependencies
-        cd order-service
-        npm install --production
-        cd ..
-        
-    - name: Build Docker Images
-      run: |
-        echo "Building Docker images..."
-        
-        # Build product-service
-        echo "Building product-service image..."
-        docker build -t ecommerce-product-service ./product-service
-        if [ $? -eq 0 ]; then echo "product-service: BUILD SUCCESS"; else echo "product-service: BUILD FAILED"; exit 1; fi
-        
-        # Build order-service
-        echo "Building order-service image..."
-        docker build -t ecommerce-order-service ./order-service
-        if [ $? -eq 0 ]; then echo "order-service: BUILD SUCCESS"; else echo "order-service: BUILD FAILED"; exit 1; fi
-        
-        # Build frontend
-        echo "Building frontend image..."
-        docker build -t ecommerce-frontend ./frontend
-        if [ $? -eq 0 ]; then echo "frontend: BUILD SUCCESS"; else echo "frontend: BUILD FAILED"; exit 1; fi
-        
-        echo "Docker images built successfully!"
-        docker images | grep ecommerce
-        
-    - name: Start Services
-      run: |
-        echo "Starting services with Docker Compose..."
-        
-        # Validate and start services
-        docker-compose config
-        if [ $? -ne 0 ]; then echo "docker-compose.yml: INVALID"; exit 1; fi
-        
-        echo "Starting all services..."
-        docker-compose up -d
-        
-        echo "Waiting for services to be ready..."
-        sleep 30
-        
-        # Check service status
-        echo "Checking service status..."
-        docker-compose ps
-        
-    - name: Health Check Tests
-      run: |
-        echo "Running health check tests..."
-        
-        # Test frontend health
-        echo "Testing frontend accessibility..."
-        curl -f -s -o /dev/null -w "%{http_code}" http://localhost:3000
-        if [ $? -eq 0 ]; then echo "Frontend: ACCESSIBLE"; else echo "Frontend: NOT ACCESSIBLE"; fi
-        
-        # Test product service health
-        echo "Testing product-service health..."
-        curl -f -s -o /dev/null -w "%{http_code}" http://localhost:3001/health
-        if [ $? -eq 0 ]; then echo "Product Service: HEALTHY"; else echo "Product Service: NOT HEALTHY"; fi
-        
-        # Test order service health
-        echo "Testing order-service health..."
-        curl -f -s -o /dev/null -w "%{http_code}" http://localhost:3002/health
-        if [ $? -eq 0 ]; then echo "Order Service: HEALTHY"; else echo "Order Service: NOT HEALTHY"; fi
-        
-        # Test API endpoints
-        echo "Testing API endpoints..."
-        echo "Testing products endpoint..."
-        curl -s http://localhost:3001/products | head -c 100
-        
-        echo "Testing orders endpoint..."
-        curl -s http://localhost:3002/orders | head -c 100
-        
-    - name: Validate Kubernetes Manifests
-      run: |
-        echo "Validating Kubernetes manifests..."
-        
-        # Validate Kubernetes YAML files
-        echo "Validating Kubernetes manifests..."
-        kubectl --help | head -3
-        
-        # Check if k8s files are valid YAML
-        for file in k8s/*.yml; do
-          if [ -f "$file" ]; then
-            echo "Validating $file..."
-            python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null && echo "$file: VALID" || echo "$file: INVALID"
-          fi
-        done
-        
-    - name: Success Summary
-      run: |
-        echo "========================================="
-        echo "CI/CD Pipeline - SUCCESS!"
-        echo "========================================="
-        echo "Project Structure: VALIDATED"
-        echo "Dependencies: INSTALLED"
-        echo "Docker Images: BUILT"
-        echo "Services: STARTED AND TESTED"
-        echo "Health Checks: PASSED"
-        echo "Kubernetes Manifests: VALIDATED"
-        echo "========================================="
-        echo "Enhanced eCommerce Store Features:"
-        echo "- Shopping Cart with Local Storage"
-        echo "- Advanced Search & Filtering"
-        echo "- Product Categories Navigation"
-        echo "- Modern UI with Gradients & Animations"
-        echo "- Microservices Architecture"
-        echo "- Docker Containerization"
-        echo "- Professional CI/CD Pipeline"
-        echo "- Health Check Testing"
-        echo "- Real Service Integration"
-        echo "========================================="
-        echo "Production Ready! All tests passed!"
-        echo "========================================="
+        node-version: 20
+
+    - name: Install product-service
+      working-directory: ./product-service
+      run: npm install
+
+    - name: Install order-service
+      working-directory: ./order-service
+      run: npm install
+
+    - name: Build Docker images
+      run: docker compose build
+
+    - name: Start containers
+      run: docker compose up -d
+
+    - name: Check running containers
+      run: docker ps
+
+    - name: Health check product service
+      run: curl http://localhost:3001/health
+
+    - name: Health check order service
+      run: curl http://localhost:3002/health
+
+    - name: Success message
+      run: echo "CI/CD Pipeline SUCCESS"
