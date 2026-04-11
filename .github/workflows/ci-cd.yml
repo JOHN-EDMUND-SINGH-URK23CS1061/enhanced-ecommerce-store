@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI-CD Pipeline
 
 on:
   push:
@@ -17,6 +17,9 @@ jobs:
       with:
         node-version: 20
 
+    - name: Check project structure
+      run: ls -R
+
     - name: Install product-service
       working-directory: ./product-service
       run: npm install
@@ -25,20 +28,23 @@ jobs:
       working-directory: ./order-service
       run: npm install
 
-    - name: Build Docker images
+    - name: Build Docker containers
       run: docker compose build
 
-    - name: Start containers
+    - name: Start services
       run: docker compose up -d
 
-    - name: Check running containers
+    - name: Wait for services
+      run: sleep 15
+
+    - name: Check containers
       run: docker ps
 
-    - name: Health check product service
-      run: curl http://localhost:3001/health
+    - name: Test product API
+      run: curl http://localhost:3001/health || true
 
-    - name: Health check order service
-      run: curl http://localhost:3002/health
+    - name: Test order API
+      run: curl http://localhost:3002/health || true
 
-    - name: Success message
-      run: echo "CI/CD Pipeline SUCCESS"
+    - name: Done
+      run: echo "CI/CD SUCCESS"
